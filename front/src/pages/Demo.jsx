@@ -17,7 +17,7 @@ const App = () => {
   useEffect(() => {
     // Connect to the Socket.IO signaling server
     socketRef.current = io('http://localhost:8000');
-    
+
     // Get the user's audio stream when the component mounts
     navigator.mediaDevices.getUserMedia({ video: false, audio: true })
       .then((stream) => {
@@ -39,7 +39,7 @@ const App = () => {
       console.log('User joined:', userId);
       setCallStatus('User joined, creating offer...');
       setIsCallActive(true);
-      
+
       // Create a new RTCPeerConnection
       const peerConnection = new RTCPeerConnection();
       peerConnectionRef.current = peerConnection;
@@ -83,7 +83,7 @@ const App = () => {
     socketRef.current.on('offer', async (data) => {
       console.log('Received offer from', data.from);
       setIsCallActive(true);
-      
+
       // Create a new RTCPeerConnection
       const peerConnection = new RTCPeerConnection();
       peerConnectionRef.current = peerConnection;
@@ -227,25 +227,24 @@ const App = () => {
       {/* Container for the main application content */}
       <div className="w-full max-w-xl p-8 bg-white rounded-2xl shadow-xl space-y-6">
         <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">WebRTC Audio Call</h1>
-        
+
         {/* Display the user's ID */}
         <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
           <h2 className="text-lg font-semibold text-gray-700">Your ID:</h2>
           <p className="text-xl font-mono text-blue-600 truncate">{yourId}</p>
         </div>
-        
+
         {/* Display the current call status */}
         <div className="text-center">
-          <span className={`inline-block px-4 py-2 rounded-full font-semibold ${
-            callStatus === 'In Call' ? 'bg-green-100 text-green-700' :
-            callStatus.includes('Error') || callStatus.includes('ended') ? 'bg-red-100 text-red-700' :
-            isRecording ? 'bg-purple-100 text-purple-700 animate-pulse' :
-            'bg-gray-100 text-gray-600'
-          }`}>
+          <span className={`inline-block px-4 py-2 rounded-full font-semibold ${callStatus === 'In Call' ? 'bg-green-100 text-green-700' :
+              callStatus.includes('Error') || callStatus.includes('ended') ? 'bg-red-100 text-red-700' :
+                isRecording ? 'bg-purple-100 text-purple-700 animate-pulse' :
+                  'bg-gray-100 text-gray-600'
+            }`}>
             Status: {callStatus}
           </span>
         </div>
-        
+
         {/* Form for initiating a call */}
         <div className="space-y-4">
           <input
@@ -273,7 +272,7 @@ const App = () => {
             </button>
           </div>
         </div>
-        
+
         {/* Recording Controls */}
         <div className="space-y-4 pt-4 border-t border-gray-200">
           <div className="text-center">
@@ -297,7 +296,7 @@ const App = () => {
           </div>
         </div>
       </div>
-      
+
       {/* Audio element for the remote stream, hidden from the UI */}
       <audio ref={remoteAudioRef} autoPlay playsInline className="hidden"></audio>
     </div>
