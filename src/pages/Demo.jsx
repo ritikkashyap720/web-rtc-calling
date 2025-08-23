@@ -7,6 +7,8 @@ const App = () => {
   const [callStatus, setCallStatus] = useState('Ready');
   const [isCallActive, setIsCallActive] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [isSendingAudio, setIsSendingAudio] = useState(false); // New state for outgoing audio
+  const [isReceivingAudio, setIsReceivingAudio] = useState(false); // New state for incoming audio
   const remoteAudioRef = useRef(null);
   const socketRef = useRef(null);
   const peerConnectionRef = useRef(null);
@@ -15,17 +17,23 @@ const App = () => {
   const recordedChunksRef = useRef([]);
 
   useEffect(() => {
-    // Connect to the Socket.IO signaling server
-    socketRef.current = io(import.meta.env.VITE_BACKEND_URL);
-
+    // Connect to the Socket.IO signaling server.
+    // The previous code used process.env, which is not available in the browser.
+    // For a real deployment on Render, you would replace this with your server's public URL.
+    const signalingServerUrl = import.meta.env.VITE_BACKEND_URL;
+    socketRef.current = io(signalingServerUrl);
+    
     // Get the user's audio stream when the component mounts
     navigator.mediaDevices.getUserMedia({ video: false, audio: true })
       .then((stream) => {
         localStreamRef.current = stream;
+        setIsSendingAudio(true); // Assume audio is being sent initially once stream is active
+        stream.getAudioTracks()[0].onended = () => setIsSendingAudio(false);
       })
       .catch((err) => {
         console.error('Failed to get local stream', err);
         setCallStatus('Error: Could not access microphone.');
+        setIsSendingAudio(false);
       });
 
     // Handle connection to the server
@@ -39,7 +47,7 @@ const App = () => {
       console.log('User joined:', userId);
       setCallStatus('User joined, creating offer...');
       setIsCallActive(true);
-
+      
       // Create a new RTCPeerConnection
       const peerConnection = new RTCPeerConnection();
       peerConnectionRef.current = peerConnection;
@@ -54,6 +62,8 @@ const App = () => {
         if (remoteAudioRef.current) {
           remoteAudioRef.current.srcObject = event.streams[0];
           setCallStatus('In Call');
+          setIsReceivingAudio(true); // Audio is being received
+          event.streams[0].getAudioTracks()[0].onended = () => setIsReceivingAudio(false);
         }
       };
 
@@ -83,7 +93,7 @@ const App = () => {
     socketRef.current.on('offer', async (data) => {
       console.log('Received offer from', data.from);
       setIsCallActive(true);
-
+      
       // Create a new RTCPeerConnection
       const peerConnection = new RTCPeerConnection();
       peerConnectionRef.current = peerConnection;
@@ -98,6 +108,8 @@ const App = () => {
         if (remoteAudioRef.current) {
           remoteAudioRef.current.srcObject = event.streams[0];
           setCallStatus('In Call');
+          setIsReceivingAudio(true); // Audio is being received
+          event.streams[0].getAudioTracks()[0].onended = () => setIsReceivingAudio(false);
         }
       };
 
@@ -171,6 +183,9 @@ const App = () => {
     if (isRecording) {
       stopRecording();
     }
+    // Reset audio status indicators
+    setIsSendingAudio(false);
+    setIsReceivingAudio(false);
   };
 
   const startRecording = () => {
@@ -227,24 +242,47 @@ const App = () => {
       {/* Container for the main application content */}
       <div className="w-full max-w-xl p-8 bg-white rounded-2xl shadow-xl space-y-6">
         <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">WebRTC Audio Call</h1>
-
+        
         {/* Display the user's ID */}
         <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
           <h2 className="text-lg font-semibold text-gray-700">Your ID:</h2>
           <p className="text-xl font-mono text-blue-600 truncate">{yourId}</p>
         </div>
-
+        
         {/* Display the current call status */}
         <div className="text-center">
-          <span className={`inline-block px-4 py-2 rounded-full font-semibold ${callStatus === 'In Call' ? 'bg-green-100 text-green-700' :
-              callStatus.includes('Error') || callStatus.includes('ended') ? 'bg-red-100 text-red-700' :
-                isRecording ? 'bg-purple-100 text-purple-700 animate-pulse' :
-                  'bg-gray-100 text-gray-600'
-            }`}>
+          <span className={`inline-block px-4 py-2 rounded-full font-semibold ${
+            callStatus === 'In Call' ? 'bg-green-100 text-green-700' :
+            callStatus.includes('Error') || callStatus.includes('ended') ? 'bg-red-100 text-red-700' :
+            isRecording ? 'bg-purple-100 text-purple-700 animate-pulse' :
+            'bg-gray-100 text-gray-600'
+          }`}>
             Status: {callStatus}
           </span>
         </div>
-
+        
+        {/* Audio Indicators */}
+        <div className="flex justify-center space-x-6">
+          <div className="flex flex-col items-center">
+            <div className={`p-4 rounded-full ${isSendingAudio ? 'bg-green-500' : 'bg-gray-400'}`}>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 text-white">
+                <path d="M8.25 4.5a.75.75 0 0 1 .75-.75h2.25a.75.75 0 0 1 .75.75v2.25a.75.75 0 0 1-.75.75H9a.75.75 0 0 1-.75-.75V4.5ZM12.75 4.5a.75.75 0 0 1 .75-.75H16.5a.75.75 0 0 1 .75.75v2.25a.75.75 0 0 1-.75.75h-2.25a.75.75 0 0 1-.75-.75V4.5ZM8.25 10.5a.75.75 0 0 1 .75-.75h2.25a.75.75 0 0 1 .75.75v2.25a.75.75 0 0 1-.75.75H9a.75.75 0 0 1-.75-.75V10.5ZM12.75 10.5a.75.75 0 0 1 .75-.75H16.5a.75.75 0 0 1 .75.75v2.25a.75.75 0 0 1-.75.75h-2.25a.75.75 0 0 1-.75-.75V10.5ZM8.25 16.5a.75.75 0 0 1 .75-.75h2.25a.75.75 0 0 1 .75.75v2.25a.75.75 0 0 1-.75.75H9a.75.75 0 0 1-.75-.75V16.5ZM12.75 16.5a.75.75 0 0 1 .75-.75H16.5a.75.75 0 0 1 .75.75v2.25a.75.75 0 0 1-.75.75h-2.25a.75.75 0 0 1-.75-.75V16.5Z" />
+                <path fillRule="evenodd" d="M18.75 2.25H5.25A2.25 2.25 0 0 0 3 4.5v15a2.25 2.25 0 0 0 2.25 2.25h13.5A2.25 2.25 0 0 0 21 19.5v-15a2.25 2.25 0 0 0-2.25-2.25ZM1.5 4.5a3.75 3.75 0 0 1 3.75-3.75h13.5a3.75 3.75 0 0 1 3.75 3.75v15a3.75 3.75 0 0 1-3.75 3.75H5.25A3.75 3.75 0 0 1 1.5 19.5v-15Z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <p className="mt-2 text-sm text-gray-600">You</p>
+          </div>
+          <div className="flex flex-col items-center">
+            <div className={`p-4 rounded-full ${isReceivingAudio ? 'bg-green-500' : 'bg-gray-400'}`}>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 text-white">
+                <path d="M13.5 4.5a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9ZM12 18.75a6.75 6.75 0 1 0 0-13.5 6.75 6.75 0 0 0 0 13.5ZM21.75 9c0-.414-.336-.75-.75-.75h-2.25a.75.75 0 0 0 0 1.5h2.25a.75.75 0 0 0 .75-.75ZM2.25 9c0-.414.336-.75.75-.75h2.25a.75.75 0 0 1 0 1.5H3a.75.75 0 0 1-.75-.75Z" />
+                <path fillRule="evenodd" d="M12 2.25a.75.75 0 0 1 .75.75v2.25a.75.75 0 0 1-1.5 0V3a.75.75 0 0 1 .75-.75ZM12 18.75a.75.75 0 0 1 .75.75v2.25a.75.75 0 0 1-1.5 0V19.5a.75.75 0 0 1 .75-.75Z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <p className="mt-2 text-sm text-gray-600">Them</p>
+          </div>
+        </div>
+        
         {/* Form for initiating a call */}
         <div className="space-y-4">
           <input
@@ -272,7 +310,7 @@ const App = () => {
             </button>
           </div>
         </div>
-
+        
         {/* Recording Controls */}
         <div className="space-y-4 pt-4 border-t border-gray-200">
           <div className="text-center">
@@ -296,7 +334,7 @@ const App = () => {
           </div>
         </div>
       </div>
-
+      
       {/* Audio element for the remote stream, hidden from the UI */}
       <audio ref={remoteAudioRef} autoPlay playsInline className="hidden"></audio>
     </div>
