@@ -48,8 +48,15 @@ const App = () => {
       setCallStatus('User joined, creating offer...');
       setIsCallActive(true);
       
-      // Create a new RTCPeerConnection
-      const peerConnection = new RTCPeerConnection();
+      // Create a new RTCPeerConnection with STUN servers
+      const peerConnection = new RTCPeerConnection({
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:stun2.l.google.com:19302' },
+          { urls: 'stun:stun3.l.google.com:19302' },
+        ],
+      });
       peerConnectionRef.current = peerConnection;
 
       // Add the local audio track to the connection
@@ -94,8 +101,15 @@ const App = () => {
       console.log('Received offer from', data.from);
       setIsCallActive(true);
       
-      // Create a new RTCPeerConnection
-      const peerConnection = new RTCPeerConnection();
+      // Create a new RTCPeerConnection with STUN servers
+      const peerConnection = new RTCPeerConnection({
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:stun2.l.google.com:19302' },
+          { urls: 'stun:stun3.l.google.com:19302' },
+        ],
+      });
       peerConnectionRef.current = peerConnection;
 
       // Add the local audio track to the connection
