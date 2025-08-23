@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useRef, useState } from 'react'
-import { SocketContext, useSocket } from '../context/SocketContext'
+import { SocketContext, useSocket } from '../context/SocketContext.jsx'
 import { Navigate } from 'react-router-dom'
 import Actions from '../../Action.js'
 

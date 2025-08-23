@@ -16,7 +16,7 @@ const App = () => {
 
   useEffect(() => {
     // Connect to the Socket.IO signaling server
-    socketRef.current = io('http://localhost:8000');
+    socketRef.current = io(import.meta.env.VITE_BACKEND_URL);
 
     // Get the user's audio stream when the component mounts
     navigator.mediaDevices.getUserMedia({ video: false, audio: true })
