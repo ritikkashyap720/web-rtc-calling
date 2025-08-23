@@ -18,8 +18,8 @@ const App = () => {
 
   useEffect(() => {
     // Connect to the Socket.IO signaling server.
-    // The previous code used process.env, which is not available in the browser.
-    // For a real deployment on Render, you would replace this with your server's public URL.
+    // IMPORTANT: You MUST replace this with your actual Render deployment URL.
+    // For example: 'https://my-signaling-server.onrender.com'
     const signalingServerUrl = import.meta.env.VITE_BACKEND_URL;
     socketRef.current = io(signalingServerUrl);
     
@@ -48,13 +48,18 @@ const App = () => {
       setCallStatus('User joined, creating offer...');
       setIsCallActive(true);
       
-      // Create a new RTCPeerConnection with STUN servers
+      // Create a new RTCPeerConnection with STUN and TURN servers
       const peerConnection = new RTCPeerConnection({
         iceServers: [
+          // Google's public STUN servers
           { urls: 'stun:stun.l.google.com:19302' },
           { urls: 'stun:stun1.l.google.com:19302' },
-          { urls: 'stun:stun2.l.google.com:19302' },
-          { urls: 'stun:stun3.l.google.com:19302' },
+          // A public TURN server (used as a relay for complex networks)
+          {
+            urls: 'turn:openrelay.metered.ca:80',
+            username: 'openrelayproject',
+            credential: 'openrelayproject',
+          },
         ],
       });
       peerConnectionRef.current = peerConnection;
@@ -101,13 +106,18 @@ const App = () => {
       console.log('Received offer from', data.from);
       setIsCallActive(true);
       
-      // Create a new RTCPeerConnection with STUN servers
+      // Create a new RTCPeerConnection with STUN and TURN servers
       const peerConnection = new RTCPeerConnection({
         iceServers: [
+          // Google's public STUN servers
           { urls: 'stun:stun.l.google.com:19302' },
           { urls: 'stun:stun1.l.google.com:19302' },
-          { urls: 'stun:stun2.l.google.com:19302' },
-          { urls: 'stun:stun3.l.google.com:19302' },
+          // A public TURN server (used as a relay for complex networks)
+          {
+            urls: 'turn:openrelay.metered.ca:80',
+            username: 'openrelayproject',
+            credential: 'openrelayproject',
+          },
         ],
       });
       peerConnectionRef.current = peerConnection;
