@@ -20,7 +20,7 @@ const App = () => {
     // Connect to the Socket.IO signaling server.
     // IMPORTANT: You MUST replace this with your actual Render deployment URL.
     // For example: 'https://my-signaling-server.onrender.com'
-    const signalingServerUrl = import.meta.env.VITE_BACKEND_URL;
+    const signalingServerUrl = 'http://localhost:9000';
     socketRef.current = io(signalingServerUrl);
     
     // Get the user's audio stream when the component mounts
@@ -48,17 +48,25 @@ const App = () => {
       setCallStatus('User joined, creating offer...');
       setIsCallActive(true);
       
-      // Create a new RTCPeerConnection with STUN and TURN servers
+      // Create a new RTCPeerConnection with a more robust list of STUN and TURN servers
       const peerConnection = new RTCPeerConnection({
         iceServers: [
-          // Google's public STUN servers
+          // A comprehensive list of public STUN servers for robust NAT traversal
           { urls: 'stun:stun.l.google.com:19302' },
           { urls: 'stun:stun1.l.google.com:19302' },
-          // A public TURN server (used as a relay for complex networks)
+          { urls: 'stun:stun2.l.google.com:19302' },
+          { urls: 'stun:stun3.l.google.com:19302' },
+          { urls: 'stun:stun4.l.google.com:19302' },
+          { urls: 'stun:stun.ekiga.net' },
+          { urls: 'stun:stun.ideasip.com' },
+          { urls: 'stun:stun.schlund.de' },
+          { urls: 'stun:stun.voiparound.com' },
+          { urls: 'stun:stun.voipbuster.com' },
+          // A different public TURN server, often more reliable than the previous one
           {
-            urls: 'turn:openrelay.metered.ca:80',
-            username: 'openrelayproject',
-            credential: 'openrelayproject',
+            urls: 'turn:freely.turn.io:80',
+            username: 'guest',
+            credential: '',
           },
         ],
       });
@@ -73,9 +81,25 @@ const App = () => {
       peerConnection.ontrack = (event) => {
         if (remoteAudioRef.current) {
           remoteAudioRef.current.srcObject = event.streams[0];
-          setCallStatus('In Call');
-          setIsReceivingAudio(true); // Audio is being received
-          event.streams[0].getAudioTracks()[0].onended = () => setIsReceivingAudio(false);
+          // Attempt to play the audio and handle potential browser autoplay errors
+          remoteAudioRef.current.play().then(() => {
+            setCallStatus('In Call');
+            setIsReceivingAudio(true); // Audio is being received
+            event.streams[0].getAudioTracks()[0].onended = () => setIsReceivingAudio(false);
+          }).catch(e => {
+            console.error('Failed to play remote audio automatically:', e);
+            setCallStatus('In Call (click on the Them indicator to unmute remote audio)');
+          });
+        }
+      };
+      
+      // Log ICE connection state changes for debugging
+      peerConnection.oniceconnectionstatechange = () => {
+        console.log('ICE connection state:', peerConnection.iceConnectionState);
+        if (peerConnection.iceConnectionState === 'failed') {
+          setCallStatus('ICE Failed: Connection could not be established.');
+        } else if (peerConnection.iceConnectionState === 'disconnected') {
+          setCallStatus('ICE Disconnected: Call lost.');
         }
       };
 
@@ -106,17 +130,25 @@ const App = () => {
       console.log('Received offer from', data.from);
       setIsCallActive(true);
       
-      // Create a new RTCPeerConnection with STUN and TURN servers
+      // Create a new RTCPeerConnection with a more robust list of STUN and TURN servers
       const peerConnection = new RTCPeerConnection({
         iceServers: [
-          // Google's public STUN servers
+          // A comprehensive list of public STUN servers for robust NAT traversal
           { urls: 'stun:stun.l.google.com:19302' },
           { urls: 'stun:stun1.l.google.com:19302' },
-          // A public TURN server (used as a relay for complex networks)
+          { urls: 'stun:stun2.l.google.com:19302' },
+          { urls: 'stun:stun3.l.google.com:19302' },
+          { urls: 'stun:stun4.l.google.com:19302' },
+          { urls: 'stun:stun.ekiga.net' },
+          { urls: 'stun:stun.ideasip.com' },
+          { urls: 'stun:stun.schlund.de' },
+          { urls: 'stun:stun.voiparound.com' },
+          { urls: 'stun:stun.voipbuster.com' },
+          // A different public TURN server, often more reliable than the previous one
           {
-            urls: 'turn:openrelay.metered.ca:80',
-            username: 'openrelayproject',
-            credential: 'openrelayproject',
+            urls: 'turn:freely.turn.io:80',
+            username: 'guest',
+            credential: '',
           },
         ],
       });
@@ -131,12 +163,28 @@ const App = () => {
       peerConnection.ontrack = (event) => {
         if (remoteAudioRef.current) {
           remoteAudioRef.current.srcObject = event.streams[0];
-          setCallStatus('In Call');
-          setIsReceivingAudio(true); // Audio is being received
-          event.streams[0].getAudioTracks()[0].onended = () => setIsReceivingAudio(false);
+          // Attempt to play the audio and handle potential browser autoplay errors
+          remoteAudioRef.current.play().then(() => {
+            setCallStatus('In Call');
+            setIsReceivingAudio(true); // Audio is being received
+            event.streams[0].getAudioTracks()[0].onended = () => setIsReceivingAudio(false);
+          }).catch(e => {
+            console.error('Failed to play remote audio automatically:', e);
+            setCallStatus('In Call (click on the Them indicator to unmute remote audio)');
+          });
         }
       };
 
+      // Log ICE connection state changes for debugging
+      peerConnection.oniceconnectionstatechange = () => {
+        console.log('ICE connection state:', peerConnection.iceConnectionState);
+        if (peerConnection.iceConnectionState === 'failed') {
+          setCallStatus('ICE Failed: Connection could not be established.');
+        } else if (peerConnection.iceConnectionState === 'disconnected') {
+          setCallStatus('ICE Disconnected: Call lost.');
+        }
+      };
+      
       // Handle ICE candidates
       peerConnection.onicecandidate = (event) => {
         if (event.candidate) {
