@@ -20,7 +20,7 @@ const App = () => {
     // Connect to the Socket.IO signaling server.
     // IMPORTANT: You MUST replace this with your actual Render deployment URL.
     // For example: 'https://my-signaling-server.onrender.com'
-    const signalingServerUrl = 'http://localhost:9000';
+    const signalingServerUrl = import.meta.env.VITE_BACKEND_URL;
     socketRef.current = io(signalingServerUrl);
     
     // Get the user's audio stream when the component mounts
